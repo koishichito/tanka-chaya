@@ -1,0 +1,146 @@
+// Prisma schema for Tanka Chaya
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  displayName   String
+  totalPoints   Int      @default(0)
+  isAdmin       Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  submissions   Submission[]
+  votes         Vote[]
+  medals        Medal[]
+  themeProposals Theme[]
+}
+
+model Event {
+  id              String   @id @default(uuid())
+  type            String   // "night", "day", "seasonal", "daily"
+  status          String   // "waiting", "submission", "voting", "results", "finished"
+  currentRound    Int      @default(1)
+  maxRounds       Int      @default(6)
+  scheduledStart  DateTime // Scheduled start time
+  scheduledEnd    DateTime // Scheduled end time
+  startTime       DateTime? // Actual start time
+  endTime         DateTime? // Actual end time
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  rooms       Room[]
+  themes      EventTheme[]
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  eventId     String
+  roomNumber  Int
+  status      String   // "active", "merged"
+  createdAt   DateTime @default(now())
+
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  submissions Submission[]
+  participants RoomParticipant[]
+}
+
+model RoomParticipant {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+}
+
+model Theme {
+  id          String   @id @default(uuid())
+  content     String
+  category    String?
+  season      String?
+  isApproved  Boolean  @default(false)
+  proposedBy  String?
+  createdAt   DateTime @default(now())
+
+  proposer    User?    @relation(fields: [proposedBy], references: [id], onDelete: SetNull)
+  events      EventTheme[]
+}
+
+model EventTheme {
+  id        String   @id @default(uuid())
+  eventId   String
+  themeId   String
+  round     Int
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  theme     Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, round])
+}
+
+model Submission {
+  id        String   @id @default(uuid())
+  userId    String
+  roomId    String
+  round     Int
+  line1     String   // 五
+  line2     String   // 七
+  line3     String   // 五
+  line4     String   // 七
+  line5     String   // 七
+  points    Int      @default(0)
+  rank      Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+
+  @@unique([userId, roomId, round])
+}
+
+model Vote {
+  id           String   @id @default(uuid())
+  voterId      String
+  submissionId String
+  voteCount    Int      @default(1)
+  createdAt    DateTime @default(now())
+
+  voter        User       @relation(fields: [voterId], references: [id], onDelete: Cascade)
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([voterId, submissionId])
+}
+
+model Medal {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String   // "gold", "silver", "bronze", "participation"
+  eventId   String
+  round     Int?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Season {
+  id          String   @id @default(uuid())
+  seasonNumber Int     @unique
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
