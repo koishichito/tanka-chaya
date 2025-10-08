@@ -9,10 +9,10 @@ const prisma = new PrismaClient();
 // Get current active event
 router.get('/current', async (req, res) => {
   try {
-    const event = await prisma.event.findFirst({
+    let event = await prisma.event.findFirst({
       where: {
         status: {
-          not: 'finished'
+          in: ['submission', 'voting']
         }
       },
       include: {
@@ -27,10 +27,37 @@ router.get('/current', async (req, res) => {
           }
         }
       },
-      orderBy: {
-        startTime: 'desc'
-      }
+      orderBy: [
+        {
+          updatedAt: 'desc'
+        }
+      ]
     });
+
+    if (!event) {
+      event = await prisma.event.findFirst({
+        where: {
+          status: 'scheduled'
+        },
+        include: {
+          rooms: {
+            include: {
+              participants: true
+            }
+          },
+          themes: {
+            include: {
+              theme: true
+            }
+          }
+        },
+        orderBy: [
+          {
+            scheduledStart: 'asc'
+          }
+        ]
+      });
+    }
 
     res.json({ event });
   } catch (error) {
@@ -87,10 +114,12 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;
 
-    // Find or create an active event
-    let event = await prisma.event.findFirst({
+    // Find an active event
+    const event = await prisma.event.findFirst({
       where: {
-        status: 'waiting'
+        status: {
+          in: ['submission', 'voting']
+        }
       },
       include: {
         rooms: {
@@ -98,22 +127,16 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
             participants: true
           }
         }
-      }
+      },
+      orderBy: [
+        {
+          updatedAt: 'desc'
+        }
+      ]
     });
 
-    // Create a new event if none exists
     if (!event) {
-      event = await eventManager.startTestEvent();
-      event = await prisma.event.findUnique({
-        where: { id: event.id },
-        include: {
-          rooms: {
-            include: {
-              participants: true
-            }
-          }
-        }
-      }) as any;
+      return res.status(404).json({ error: 'No active event' });
     }
 
     // Find a room with space (less than 80 participants)
@@ -152,7 +175,7 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
       });
 
       // Notify event manager of new participant
-      await eventManager.addParticipant(event.id, room.id, userId);
+      await eventManager.addParticipant(event.id, room.id);
     }
 
     res.json({

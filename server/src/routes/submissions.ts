@@ -16,13 +16,20 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       return res.status(400).json({ error: 'All fields are required' });
     }
 
-    // Check if room exists
+    // Check if room exists and accepts submissions
     const room = await prisma.room.findUnique({
-      where: { id: roomId }
+      where: { id: roomId },
+      include: {
+        event: true
+      }
     });
 
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
+    }
+
+    if (!room.event || room.event.status !== 'submission') {
+      return res.status(400).json({ error: 'Event is not accepting submissions' });
     }
 
     // Upsert submission (allow editing)

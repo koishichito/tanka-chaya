@@ -23,20 +23,33 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
 
     // Delete existing votes for this voter in this round
     const firstSubmission = await prisma.submission.findUnique({
-      where: { id: votes[0].submissionId }
-    });
-
-    if (firstSubmission) {
-      await prisma.vote.deleteMany({
-        where: {
-          voterId,
-          submission: {
-            roomId: firstSubmission.roomId,
-            round: firstSubmission.round
+      where: { id: votes[0].submissionId },
+      include: {
+        room: {
+          include: {
+            event: true
           }
         }
-      });
+      }
+    });
+
+    if (!firstSubmission || !firstSubmission.room) {
+      return res.status(404).json({ error: 'Submission not found' });
     }
+
+    if (!firstSubmission.room.event || firstSubmission.room.event.status !== 'voting') {
+      return res.status(400).json({ error: 'Event is not accepting votes' });
+    }
+
+    await prisma.vote.deleteMany({
+      where: {
+        voterId,
+        submission: {
+          roomId: firstSubmission.roomId,
+          round: firstSubmission.round
+        }
+      }
+    });
 
     // Create new votes
     const createdVotes = await Promise.all(
@@ -80,6 +93,17 @@ router.get('/check/:roomId/:round', authMiddleware, async (req: AuthRequest, res
     const voterId = req.userId!;
     const { roomId, round } = req.params;
 
+    const room = await prisma.room.findUnique({
+      where: { id: roomId },
+      include: {
+        event: true
+      }
+    });
+
+    if (!room || !room.event) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
     const votes = await prisma.vote.findMany({
       where: {
         voterId,
@@ -92,7 +116,8 @@ router.get('/check/:roomId/:round', authMiddleware, async (req: AuthRequest, res
 
     res.json({
       hasVoted: votes.length > 0,
-      votes
+      votes,
+      eventStatus: room.event.status
     });
   } catch (error) {
     console.error('Check votes error:', error);

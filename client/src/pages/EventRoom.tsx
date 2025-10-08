@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Event, Submission } from '../types';
 import { api } from '../services/api';
@@ -6,6 +6,20 @@ import { getSocket, joinRoom } from '../services/socket';
 import TankaSubmission from '../components/TankaSubmission';
 import VotingPanel from '../components/VotingPanel';
 import ResultsPanel from '../components/ResultsPanel';
+
+const typeLabelMap: Record<string, string> = {
+  night: '夜の歌会',
+  day: '昼の歌会',
+  seasonal: '季節の歌会',
+  daily: '日めくり短歌会'
+};
+
+const statusDescriptionMap: Record<string, string> = {
+  scheduled: '開始までお待ちください',
+  submission: 'お題に沿って短歌を投稿しましょう',
+  voting: 'お気に入りの短歌に投票してください',
+  finished: 'イベントは終了しました'
+};
 
 export default function EventRoom() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -19,8 +33,9 @@ export default function EventRoom() {
 
   useEffect(() => {
     if (eventId) {
-      loadEvent();
+      loadEvent(eventId);
     }
+
     if (roomId) {
       joinRoom(roomId);
       setupSocketListeners();
@@ -33,22 +48,27 @@ export default function EventRoom() {
     };
   }, [eventId, roomId]);
 
-  const loadEvent = async () => {
+  const loadEvent = async (id: string) => {
     try {
-      const data = await api.getEvent(eventId!);
-      setEvent(data.event);
+      const data = await api.getEvent(id);
+      const eventData: Event = data.event;
+      setEvent(eventData);
 
-      // Get current theme
-      const currentRound = data.event.currentRound;
-      const themeData = data.event.themes?.find((t: any) => t.round === currentRound);
-      if (themeData) {
-        setCurrentTheme(themeData.theme.content);
-      }
+      if (eventData) {
+        const totalParticipants = eventData.rooms?.reduce(
+          (sum, room) => sum + (room.participants?.length || 0),
+          0
+        ) || 0;
+        setParticipantCount(totalParticipants);
 
-      // Load my submission
-      if (roomId) {
-        const submissionData = await api.getMySubmission(roomId, currentRound);
-        setMySubmission(submissionData.submission);
+        const currentRound = eventData.currentRound;
+        const themeData = eventData.themes?.find((t: any) => t.round === currentRound);
+        setCurrentTheme(themeData?.theme?.content || '');
+
+        if (roomId) {
+          const submissionData = await api.getMySubmission(roomId, currentRound);
+          setMySubmission(submissionData.submission);
+        }
       }
     } catch (error) {
       console.error('Failed to load event:', error);
@@ -62,25 +82,34 @@ export default function EventRoom() {
       setParticipantCount(data.count);
     });
 
-    socket?.on('countdown-start', (data) => {
-      console.log(`Countdown started: ${data.phase}, ${data.duration}ms`);
-      // Could show a countdown timer UI here
-    });
-
-    socket?.on('phase-update', (data) => {
-      console.log('Phase update:', data);
-      // Reload event data to get latest status
-      loadEvent();
+    socket?.on('phase-update', () => {
+      if (eventId) {
+        loadEvent(eventId);
+      }
     });
   };
 
   const handleSubmissionComplete = () => {
-    loadEvent();
+    if (eventId) {
+      loadEvent(eventId);
+    }
   };
 
   const handleVoteComplete = () => {
-    loadEvent();
+    if (eventId) {
+      loadEvent(eventId);
+    }
   };
+
+  const eventTypeLabel = useMemo(() => {
+    if (!event) return '';
+    return typeLabelMap[event.type] || event.type;
+  }, [event]);
+
+  const statusDescription = useMemo(() => {
+    if (!event) return '';
+    return statusDescriptionMap[event.status] || '';
+  }, [event]);
 
   if (!event || !roomId) {
     return (
@@ -93,22 +122,16 @@ export default function EventRoom() {
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                {event.type === 'night' && '夜の歌会'}
-                {event.type === 'day' && '昼の歌会'}
-                {event.type === 'seasonal' && '季節の歌会'}
-                {event.type === 'daily' && '日めくり短歌会'}
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-800">{eventTypeLabel}</h1>
               <p className="text-gray-600 mt-1">
                 ラウンド {event.currentRound} / {event.maxRounds}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-gray-600">参加者数</p>
+              <p className="text-sm text-gray-600">参加者</p>
               <p className="text-2xl font-bold text-purple-600">{participantCount}</p>
             </div>
           </div>
@@ -119,19 +142,22 @@ export default function EventRoom() {
               <p className="text-xl font-bold text-gray-800">{currentTheme}</p>
             </div>
           )}
+
+          {statusDescription && (
+            <p className="text-sm text-gray-500 mt-4">{statusDescription}</p>
+          )}
         </div>
 
-        {/* Main Content */}
-        {event.status === 'waiting' && (
+        {event.status === 'scheduled' && (
           <div className="bg-white rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">
               イベント開始をお待ちください
             </h2>
             <p className="text-gray-600">
-              参加者が集まり次第、イベントが開始されます
+              主催者が開始すると投稿が可能になります。
             </p>
             <div className="mt-6">
-              <div className="animate-pulse inline-block w-16 h-16 bg-purple-200 rounded-full"></div>
+              <div className="animate-pulse inline-block w-16 h-16 bg-purple-200 rounded-full" />
             </div>
           </div>
         )}
@@ -154,27 +180,10 @@ export default function EventRoom() {
           />
         )}
 
-        {event.status === 'results' && (
-          <ResultsPanel
-            eventId={eventId!}
-            roomId={roomId}
-            round={event.currentRound}
-          />
-        )}
-
         {event.status === 'finished' && (
-          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">
-              イベント終了
-            </h2>
-            <p className="text-gray-600 mb-6">
-              お疲れ様でした！
-            </p>
-            <ResultsPanel
-              eventId={eventId!}
-              roomId={roomId}
-              round={event.currentRound}
-            />
+          <div className="bg-white rounded-lg shadow-lg p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">結果発表</h2>
+            <ResultsPanel eventId={eventId!} roomId={roomId} round={event.currentRound} />
           </div>
         )}
       </div>

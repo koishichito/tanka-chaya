@@ -9,7 +9,7 @@
 export interface Event {
   id: string;
   type: string;
-  status: 'waiting' | 'submission' | 'voting' | 'results' | 'finished';
+  status: 'scheduled' | 'submission' | 'voting' | 'finished' | string;
   currentRound: number;
   maxRounds: number;
   scheduledStart: string;

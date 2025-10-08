@@ -1,8 +1,12 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-const getAuthHeader = () => {
+const getAuthHeaders = (): Record<string, string> => {
+  const headers: Record<string, string> = {};
   const token = localStorage.getItem('token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
 };
 
 export const api = {
@@ -29,7 +33,7 @@ export const api = {
 
   async getMe() {
     const res = await fetch(`${API_URL}/auth/me`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -53,7 +57,7 @@ export const api = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader()
+        ...getAuthHeaders()
       }
     });
     if (!res.ok) throw new Error(await res.text());
@@ -66,7 +70,7 @@ export const api = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader()
+        ...getAuthHeaders()
       },
       body: JSON.stringify({
         roomId,
@@ -84,7 +88,7 @@ export const api = {
 
   async getSubmissions(roomId: string, round: number) {
     const res = await fetch(`${API_URL}/submissions/room/${roomId}/round/${round}`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -92,7 +96,7 @@ export const api = {
 
   async getMySubmission(roomId: string, round: number) {
     const res = await fetch(`${API_URL}/submissions/mine/${roomId}/${round}`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -104,7 +108,7 @@ export const api = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader()
+        ...getAuthHeaders()
       },
       body: JSON.stringify({ votes })
     });
@@ -114,7 +118,7 @@ export const api = {
 
   async checkVoted(roomId: string, round: number) {
     const res = await fetch(`${API_URL}/votes/check/${roomId}/${round}`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -136,7 +140,7 @@ export const api = {
   // Admin
   async getAdminStats() {
     const res = await fetch(`${API_URL}/admin/stats`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -144,7 +148,7 @@ export const api = {
 
   async getAdminEvents() {
     const res = await fetch(`${API_URL}/admin/events`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -153,17 +157,44 @@ export const api = {
   async createEvent(data: {
     type: string;
     maxRounds: number;
-    scheduledStart: string;
-    scheduledEnd: string;
+    scheduledStart?: string | null;
+    scheduledEnd?: string | null;
     themes: string[];
   }) {
     const res = await fetch(`${API_URL}/admin/events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...getAuthHeader()
+        ...getAuthHeaders()
       },
       body: JSON.stringify(data)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async startEvent(id: string) {
+    const res = await fetch(`${API_URL}/admin/events/${id}/start`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async openVoting(id: string) {
+    const res = await fetch(`${API_URL}/admin/events/${id}/open-voting`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async finishEvent(id: string) {
+    const res = await fetch(`${API_URL}/admin/events/${id}/finish`, {
+      method: 'POST',
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -172,7 +203,7 @@ export const api = {
   async deleteEvent(id: string) {
     const res = await fetch(`${API_URL}/admin/events/${id}`, {
       method: 'DELETE',
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
@@ -180,7 +211,7 @@ export const api = {
 
   async getAdminUsers() {
     const res = await fetch(`${API_URL}/admin/users`, {
-      headers: getAuthHeader()
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();

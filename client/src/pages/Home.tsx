@@ -1,13 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
 import { Event } from '../types';
 
+const typeLabelMap: Record<string, string> = {
+  night: '夜の歌会',
+  day: '昼の歌会',
+  seasonal: '季節の歌会',
+  daily: '日めくり短歌会'
+};
+
+const statusLabelMap: Record<string, string> = {
+  scheduled: '開始待ち',
+  submission: '投稿受付中',
+  voting: '投票受付中',
+  finished: '終了'
+};
+
 export default function Home() {
   const { user, logout } = useAuth();
   const [currentEvent, setCurrentEvent] = useState<Event | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isJoining, setIsJoining] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,7 +38,7 @@ export default function Home() {
   };
 
   const handleJoinEvent = async () => {
-    setIsLoading(true);
+    setIsJoining(true);
     try {
       const data = await api.joinEvent();
       navigate(`/event/${data.eventId}?roomId=${data.roomId}`);
@@ -32,19 +46,28 @@ export default function Home() {
       console.error('Failed to join event:', error);
       alert('イベントへの参加に失敗しました');
     } finally {
-      setIsLoading(false);
+      setIsJoining(false);
     }
   };
+
+  const eventTypeLabel = useMemo(() => {
+    if (!currentEvent) return '';
+    return typeLabelMap[currentEvent.type] || currentEvent.type;
+  }, [currentEvent]);
+
+  const eventStatusLabel = useMemo(() => {
+    if (!currentEvent) return '';
+    return statusLabelMap[currentEvent.status] || currentEvent.status;
+  }, [currentEvent]);
 
   return (
     <div className="min-h-screen px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">短歌茶屋</h1>
-              <p className="text-gray-600 mt-1">ようこそ、{user?.displayName}さん</p>
+              <p className="text-gray-600 mt-1">ようこそ、{user?.displayName} さん</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">累計ポイント</p>
@@ -55,7 +78,7 @@ export default function Home() {
                     onClick={() => navigate('/admin')}
                     className="text-sm text-purple-600 hover:text-purple-800 font-medium"
                   >
-                    管理画面
+                    管理画面へ
                   </button>
                 )}
                 <button
@@ -69,68 +92,65 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Event Info */}
         <div className="bg-white rounded-lg shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            イベント
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">イベント</h2>
 
           {currentEvent ? (
             <div className="space-y-4">
               <div className="p-4 bg-purple-50 rounded-lg">
                 <p className="text-sm text-gray-600">開催中のイベント</p>
-                <h3 className="text-xl font-bold text-gray-800 mt-1">
-                  {currentEvent.type === 'night' && '夜の歌会'}
-                  {currentEvent.type === 'day' && '昼の歌会'}
-                  {currentEvent.type === 'seasonal' && '季節の歌会'}
-                  {currentEvent.type === 'daily' && '日めくり短歌会'}
-                </h3>
-                <p className="text-sm text-gray-600 mt-2">
-                  ステータス: {currentEvent.status}
-                </p>
+                <h3 className="text-xl font-bold text-gray-800 mt-1">{eventTypeLabel}</h3>
+                <p className="text-sm text-gray-600 mt-2">ステータス: {eventStatusLabel}</p>
                 <p className="text-sm text-gray-600">
-                  ラウンド: {currentEvent.currentRound} / {currentEvent.maxRounds}
+                  ラウンド {currentEvent.currentRound} / {currentEvent.maxRounds}
                 </p>
               </div>
 
               <button
                 onClick={handleJoinEvent}
-                disabled={isLoading || currentEvent.status === 'finished'}
+                disabled={
+                  isJoining ||
+                  currentEvent.status === 'finished' ||
+                  currentEvent.status === 'scheduled'
+                }
                 className="w-full bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition disabled:opacity-50 text-lg font-semibold"
               >
-                {isLoading ? '参加中...' : 'イベントに参加'}
+                {isJoining
+                  ? '参加中...'
+                  : currentEvent.status === 'scheduled'
+                  ? '開始を待つ'
+                  : 'イベントに参加'}
               </button>
             </div>
           ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">現在開催中のイベントはありません</p>
+            <div className="text-center py-8 space-y-4">
+              <p className="text-gray-600">現在参加できるイベントはありません</p>
               <button
                 onClick={handleJoinEvent}
-                disabled={isLoading}
+                disabled={isJoining}
                 className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
               >
-                {isLoading ? 'イベントを作成中...' : '新しいイベントを作成'}
+                {isJoining ? 'イベントを検索中...' : 'イベントに備える'}
               </button>
             </div>
           )}
         </div>
 
-        {/* Info Boxes */}
         <div className="grid md:grid-cols-3 gap-4 mt-6">
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="font-bold text-gray-800 mb-2">🌙 夜の歌会</h3>
-            <p className="text-sm text-gray-600">毎日22時開催</p>
+            <p className="text-sm text-gray-600">毎日22時開催（スケジュールに応じて開始）</p>
             <p className="text-sm text-gray-600">6ラウンド制</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="font-bold text-gray-800 mb-2">☀️ 昼の歌会</h3>
-            <p className="text-sm text-gray-600">土日14時開催</p>
+            <p className="text-sm text-gray-600">週末14時を中心に開催</p>
             <p className="text-sm text-gray-600">6ラウンド制</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
             <h3 className="font-bold text-gray-800 mb-2">📅 日めくり</h3>
-            <p className="text-sm text-gray-600">24時間投稿</p>
-            <p className="text-sm text-gray-600">24時間投票</p>
+            <p className="text-sm text-gray-600">毎日11時にお題更新</p>
+            <p className="text-sm text-gray-600">投稿と投票で創作を楽しもう</p>
           </div>
         </div>
       </div>

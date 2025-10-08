@@ -31,22 +31,19 @@ export default function CreateEventForm({ onSuccess }: Props) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!scheduledStart || !scheduledEnd) {
-      alert('開始時刻と終了時刻を入力してください');
-      return;
-    }
-
     if (themes.some(t => !t.trim())) {
       alert('全てのお題を入力してください');
       return;
     }
 
-    const start = new Date(scheduledStart);
-    const end = new Date(scheduledEnd);
+    if (scheduledStart && scheduledEnd) {
+      const start = new Date(scheduledStart);
+      const end = new Date(scheduledEnd);
 
-    if (start >= end) {
-      alert('終了時刻は開始時刻より後にしてください');
-      return;
+      if (start >= end) {
+        alert('終了時刻は開始時刻より後にしてください');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -54,8 +51,8 @@ export default function CreateEventForm({ onSuccess }: Props) {
       await api.createEvent({
         type,
         maxRounds,
-        scheduledStart,
-        scheduledEnd,
+        scheduledStart: scheduledStart || null,
+        scheduledEnd: scheduledEnd || null,
         themes
       });
 
@@ -106,27 +103,25 @@ export default function CreateEventForm({ onSuccess }: Props) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            開始時刻
+            開始時刻（任意）
           </label>
           <input
             type="datetime-local"
             value={scheduledStart}
             onChange={(e) => setScheduledStart(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            required
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            終了時刻
+            終了時刻（任意）
           </label>
           <input
             type="datetime-local"
             value={scheduledEnd}
             onChange={(e) => setScheduledEnd(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            required
           />
         </div>
       </div>

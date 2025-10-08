@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { adminMiddleware } from '../middleware/admin';
+import { eventManager } from '../services/eventManager';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -21,8 +22,7 @@ router.post('/events', async (req: AuthRequest, res) => {
       themes
     } = req.body;
 
-    // Validation
-    if (!type || !maxRounds || !scheduledStart || !scheduledEnd) {
+    if (!type || !maxRounds) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -32,14 +32,26 @@ router.post('/events', async (req: AuthRequest, res) => {
       });
     }
 
+    const now = new Date();
+    const start = scheduledStart ? new Date(scheduledStart) : now;
+    const end = scheduledEnd ? new Date(scheduledEnd) : new Date(start.getTime() + 60 * 60 * 1000);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({ error: 'Invalid schedule values' });
+    }
+
+    if (end <= start) {
+      return res.status(400).json({ error: 'End time must be after start time' });
+    }
+
     // Create event
     const event = await prisma.event.create({
       data: {
         type,
-        status: 'waiting',
+        status: 'scheduled',
         maxRounds,
-        scheduledStart: new Date(scheduledStart),
-        scheduledEnd: new Date(scheduledEnd),
+        scheduledStart: start,
+        scheduledEnd: end,
         rooms: {
           create: {
             roomNumber: 1,
@@ -179,6 +191,42 @@ router.post('/users/:id/admin', async (req, res) => {
   } catch (error) {
     console.error('Make admin error:', error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Start event (submission phase)
+router.post('/events/:id/start', async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventManager.startEvent(id);
+    res.json({ event });
+  } catch (error: any) {
+    console.error('Start event error:', error);
+    res.status(400).json({ error: error.message || 'Failed to start event' });
+  }
+});
+
+// Move event to voting phase
+router.post('/events/:id/open-voting', async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventManager.openVoting(id);
+    res.json({ event });
+  } catch (error: any) {
+    console.error('Open voting error:', error);
+    res.status(400).json({ error: error.message || 'Failed to open voting' });
+  }
+});
+
+// Finish event and publish results
+router.post('/events/:id/finish', async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const event = await eventManager.finishEvent(id);
+    res.json({ event });
+  } catch (error: any) {
+    console.error('Finish event error:', error);
+    res.status(400).json({ error: error.message || 'Failed to finish event' });
   }
 });
 
