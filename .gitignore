@@ -35,9 +35,6 @@ logs/
 .DS_Store
 Thumbs.db
 
-# Prisma
-server/prisma/migrations/
-
 # Temporary files
 *.tmp
 .cache/
