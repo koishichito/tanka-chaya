@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children, requireAdmin = false }: ProtectedRouteProps) {
-  const { user, token, isLoading, initialized, checkAuth } = useAuth();
+  const { user, isLoading, initialized, checkAuth } = useAuth();
 
   useEffect(() => {
     if (!initialized) {
@@ -25,14 +25,12 @@ export default function ProtectedRoute({ children, requireAdmin = false }: Prote
   }
 
   if (!user) {
-    if (!token) {
-      return <Navigate to="/login" replace />;
-    }
-    return <Navigate to="/login" replace />;
+    const redirectPath = requireAdmin ? '/admin/login' : '/login';
+    return <Navigate to={redirectPath} replace />;
   }
 
   if (requireAdmin && !user.isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;

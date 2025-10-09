@@ -1,9 +1,10 @@
-import { PrismaClient, Event as EventModel, Room } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { Server } from 'socket.io';
 
 const prisma = new PrismaClient();
 
-type EventWithRooms = EventModel & { rooms: Room[] };
+type EventWithRooms = Prisma.EventGetPayload<{ include: { rooms: true } }>;
+type EventRoom = EventWithRooms['rooms'][number];
 
 export class EventManager {
   private io: Server | null = null;
@@ -13,7 +14,7 @@ export class EventManager {
   }
 
   async startEvent(eventId: string) {
-    const existing = await prisma.event.findUnique({
+    const existing: EventWithRooms | null = await prisma.event.findUnique({
       where: { id: eventId },
       include: { rooms: true }
     });
@@ -36,16 +37,20 @@ export class EventManager {
       });
     }
 
-    const updateData: any = {
-      status: 'submission',
-      currentRound: existing.currentRound > 0 ? existing.currentRound : 1
-    };
+      const updateData: {
+        status: string;
+        currentRound: number;
+        startTime?: Date;
+      } = {
+        status: 'submission',
+        currentRound: existing.currentRound > 0 ? existing.currentRound : 1
+      };
 
     if (!existing.startTime) {
       updateData.startTime = new Date();
     }
 
-    const event = await prisma.event.update({
+    const event: EventWithRooms = await prisma.event.update({
       where: { id: eventId },
       data: updateData,
       include: {
@@ -58,7 +63,7 @@ export class EventManager {
   }
 
   async openVoting(eventId: string) {
-    const existing = await prisma.event.findUnique({
+    const existing: EventWithRooms | null = await prisma.event.findUnique({
       where: { id: eventId },
       include: { rooms: true }
     });
@@ -75,7 +80,7 @@ export class EventManager {
       throw new Error('Event is not accepting submissions');
     }
 
-    const event = await prisma.event.update({
+    const event: EventWithRooms = await prisma.event.update({
       where: { id: eventId },
       data: {
         status: 'voting'
@@ -90,7 +95,7 @@ export class EventManager {
   }
 
   async finishEvent(eventId: string) {
-    const existing = await prisma.event.findUnique({
+    const existing: EventWithRooms | null = await prisma.event.findUnique({
       where: { id: eventId },
       include: { rooms: true }
     });
@@ -113,7 +118,7 @@ export class EventManager {
       });
     }
 
-    const event = await prisma.event.update({
+    const event: EventWithRooms = await prisma.event.update({
       where: { id: eventId },
       data: {
         status: 'finished',
@@ -151,7 +156,7 @@ export class EventManager {
     if (!event) return;
 
     const rooms = event.rooms ?? [];
-    rooms.forEach((room) => {
+    rooms.forEach((room: EventRoom) => {
       this.broadcastToRoom(room.id, 'phase-update', {
         phase,
         eventId: event.id,

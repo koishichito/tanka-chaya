@@ -1,0 +1,360 @@
+{
+  "id": "edf90c2c-b639-4f24-a6c3-36daa45bda9d",
+  "name": "tanka-chaya",
+  "deletedAt": null,
+  "workspace": {
+    "name": "Keisuke Ogasawara's Projects"
+  },
+  "environments": {
+    "edges": [
+      {
+        "node": {
+          "id": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+          "name": "production",
+          "deletedAt": null
+        }
+      }
+    ]
+  },
+  "services": {
+    "edges": [
+      {
+        "node": {
+          "id": "48daf723-fa6a-4b3c-90d5-06d85e9becc3",
+          "name": "Postgres-2t0r",
+          "serviceInstances": {
+            "edges": [
+              {
+                "node": {
+                  "id": "7876d048-f256-4593-81e8-f89530ba6717",
+                  "serviceId": "48daf723-fa6a-4b3c-90d5-06d85e9becc3",
+                  "serviceName": "Postgres-2t0r",
+                  "environmentId": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+                  "latestDeployment": {
+                    "canRedeploy": true,
+                    "id": "a4e330ac-822c-42c9-bedd-ce3a72c5dd35",
+                    "meta": {
+                      "image": "ghcr.io/railwayapp-templates/postgres-ssl:17",
+                      "imageDigest": "sha256:66e8beadd353a030fe237abb4d593e69957a8355ab17873356e6ab828acb38cd",
+                      "logsV2": true,
+                      "patchId": "ae2a47af-4ee8-4343-add4-c98ac478d2e9",
+                      "reason": "deploy",
+                      "runtime": "V2",
+                      "serviceManifest": {
+                        "build": {
+                          "buildCommand": null,
+                          "buildEnvironment": null,
+                          "builder": "RAILPACK",
+                          "dockerfilePath": null,
+                          "nixpacksConfigPath": null,
+                          "nixpacksPlan": null,
+                          "watchPatterns": []
+                        },
+                        "deploy": {
+                          "cronSchedule": null,
+                          "drainingSeconds": null,
+                          "healthcheckPath": null,
+                          "healthcheckTimeout": null,
+                          "limitOverride": null,
+                          "multiRegionConfig": {
+                            "asia-southeast1-eqsg3a": {
+                              "numReplicas": 1
+                            }
+                          },
+                          "numReplicas": 1,
+                          "overlapSeconds": null,
+                          "preDeployCommand": null,
+                          "region": null,
+                          "registryCredentials": null,
+                          "requiredMountPath": null,
+                          "restartPolicyMaxRetries": 10,
+                          "restartPolicyType": "ON_FAILURE",
+                          "runtime": "V2",
+                          "sleepApplication": false,
+                          "startCommand": null,
+                          "useLegacyStacker": false
+                        }
+                      },
+                      "volumeMounts": [
+                        "/var/lib/postgresql/data"
+                      ]
+                    },
+                    "status": "SUCCESS",
+                    "deploymentStopped": false
+                  },
+                  "source": {
+                    "repo": null,
+                    "image": "ghcr.io/railwayapp-templates/postgres-ssl:17"
+                  },
+                  "domains": {
+                    "serviceDomains": [],
+                    "customDomains": []
+                  },
+                  "cronSchedule": null,
+                  "nextCronRunAt": null,
+                  "startCommand": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "node": {
+          "id": "6ff417f5-67c1-4483-8c83-867938e39617",
+          "name": "client",
+          "serviceInstances": {
+            "edges": [
+              {
+                "node": {
+                  "id": "d6a42979-5cf2-4d45-9da8-a7a83968a071",
+                  "serviceId": "6ff417f5-67c1-4483-8c83-867938e39617",
+                  "serviceName": "client",
+                  "environmentId": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+                  "latestDeployment": {
+                    "canRedeploy": true,
+                    "id": "4b5f5edf-9e87-4efb-992c-b8c775b61394",
+                    "meta": {
+                      "buildOnly": false,
+                      "configFile": null,
+                      "fileServiceManifest": {},
+                      "imageDigest": "sha256:acad184b7fb13f5a54070e3f850201c69fadf58aa2e811b26e0c25f3f54fbe6a",
+                      "logsV2": true,
+                      "nixpacksProviders": [
+                        "node"
+                      ],
+                      "propertyFileMapping": {},
+                      "railpackInfo": {
+                        "detectedProviders": [
+                          "node"
+                        ],
+                        "metadata": {
+                          "nodePackageManager": "npm",
+                          "nodeRuntime": "node",
+                          "providers": "node"
+                        },
+                        "railpackVersion": "0.9.0",
+                        "resolvedPackages": {
+                          "node": {
+                            "requestedVersion": "22",
+                            "resolvedVersion": "22.20.0"
+                          }
+                        }
+                      },
+                      "reason": "deploy",
+                      "rootDirectory": null,
+                      "runtime": "V2",
+                      "serviceManifest": {
+                        "build": {
+                          "buildCommand": null,
+                          "buildEnvironment": null,
+                          "builder": "RAILPACK",
+                          "dockerfilePath": null,
+                          "nixpacksConfigPath": null,
+                          "nixpacksPlan": null,
+                          "watchPatterns": []
+                        },
+                        "deploy": {
+                          "cronSchedule": null,
+                          "drainingSeconds": null,
+                          "healthcheckPath": null,
+                          "healthcheckTimeout": null,
+                          "limitOverride": null,
+                          "multiRegionConfig": {
+                            "asia-southeast1-eqsg3a": {
+                              "numReplicas": 1
+                            }
+                          },
+                          "numReplicas": 1,
+                          "overlapSeconds": null,
+                          "preDeployCommand": null,
+                          "region": null,
+                          "registryCredentials": null,
+                          "requiredMountPath": null,
+                          "restartPolicyMaxRetries": 10,
+                          "restartPolicyType": "ON_FAILURE",
+                          "runtime": "V2",
+                          "sleepApplication": false,
+                          "startCommand": null,
+                          "useLegacyStacker": false
+                        }
+                      },
+                      "volumeMounts": []
+                    },
+                    "status": "SUCCESS",
+                    "deploymentStopped": false
+                  },
+                  "source": {
+                    "repo": null,
+                    "image": null
+                  },
+                  "domains": {
+                    "serviceDomains": [],
+                    "customDomains": []
+                  },
+                  "cronSchedule": null,
+                  "nextCronRunAt": null,
+                  "startCommand": null
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "node": {
+          "id": "9d2ed644-8c9d-4fb1-9b81-8670c69b6590",
+          "name": "backend",
+          "serviceInstances": {
+            "edges": [
+              {
+                "node": {
+                  "id": "8189afbe-68ff-4b17-9163-bc438dc2612c",
+                  "serviceId": "9d2ed644-8c9d-4fb1-9b81-8670c69b6590",
+                  "serviceName": "backend",
+                  "environmentId": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+                  "latestDeployment": {
+                    "canRedeploy": true,
+                    "id": "0500846d-ceb5-40dd-a0fd-b5cf31a50848",
+                    "meta": {
+                      "buildOnly": false,
+                      "configFile": null,
+                      "fileServiceManifest": {},
+                      "imageDigest": "sha256:57656d7d42ea4b1252bc2ea95dab289a1c9034327a20eeb67c7941049c0496e0",
+                      "logsV2": true,
+                      "nixpacksProviders": [
+                        "node"
+                      ],
+                      "propertyFileMapping": {},
+                      "railpackInfo": {
+                        "detectedProviders": [
+                          "node"
+                        ],
+                        "metadata": {
+                          "nodePackageManager": "npm",
+                          "nodeRuntime": "node",
+                          "providers": "node"
+                        },
+                        "railpackVersion": "0.9.0",
+                        "resolvedPackages": {
+                          "node": {
+                            "requestedVersion": "22",
+                            "resolvedVersion": "22.20.0"
+                          }
+                        }
+                      },
+                      "reason": "deploy",
+                      "rootDirectory": null,
+                      "runtime": "V2",
+                      "serviceManifest": {
+                        "build": {
+                          "buildCommand": null,
+                          "buildEnvironment": null,
+                          "builder": "RAILPACK",
+                          "dockerfilePath": null,
+                          "nixpacksConfigPath": null,
+                          "nixpacksPlan": null,
+                          "watchPatterns": []
+                        },
+                        "deploy": {
+                          "cronSchedule": null,
+                          "drainingSeconds": null,
+                          "healthcheckPath": null,
+                          "healthcheckTimeout": null,
+                          "limitOverride": null,
+                          "multiRegionConfig": {
+                            "asia-southeast1-eqsg3a": {
+                              "numReplicas": 1
+                            }
+                          },
+                          "numReplicas": 1,
+                          "overlapSeconds": null,
+                          "preDeployCommand": null,
+                          "region": null,
+                          "registryCredentials": null,
+                          "requiredMountPath": null,
+                          "restartPolicyMaxRetries": 10,
+                          "restartPolicyType": "ON_FAILURE",
+                          "runtime": "V2",
+                          "sleepApplication": false,
+                          "startCommand": null,
+                          "useLegacyStacker": false
+                        }
+                      },
+                      "volumeMounts": []
+                    },
+                    "status": "SUCCESS",
+                    "deploymentStopped": false
+                  },
+                  "source": {
+                    "repo": null,
+                    "image": null
+                  },
+                  "domains": {
+                    "serviceDomains": [
+                      {
+                        "id": "1babda51-c03c-4a92-b836-5a456ca7b0d6",
+                        "domain": "backend-production-92870.up.railway.app",
+                        "targetPort": null
+                      }
+                    ],
+                    "customDomains": []
+                  },
+                  "cronSchedule": null,
+                  "nextCronRunAt": null,
+                  "startCommand": null
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "volumes": {
+    "edges": [
+      {
+        "node": {
+          "volumeInstances": {
+            "edges": [
+              {
+                "node": {
+                  "serviceId": null,
+                  "mountPath": "/var/lib/postgresql/data",
+                  "environmentId": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+                  "currentSizeMB": 97.550336,
+                  "sizeMB": 500,
+                  "volume": {
+                    "name": "postgres-volume",
+                    "id": "4d0b2006-a7cb-4382-9bec-49b332ad7110"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      {
+        "node": {
+          "volumeInstances": {
+            "edges": [
+              {
+                "node": {
+                  "serviceId": "48daf723-fa6a-4b3c-90d5-06d85e9becc3",
+                  "mountPath": "/var/lib/postgresql/data",
+                  "environmentId": "f5437072-5593-45c7-87a4-ec780a6c4fc2",
+                  "currentSizeMB": 97.533952,
+                  "sizeMB": 500,
+                  "volume": {
+                    "name": "postgres-2t0r-volume",
+                    "id": "ac13c7c4-9109-4e43-a50c-37ef3fc8a736"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

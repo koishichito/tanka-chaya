@@ -1,31 +1,66 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { eventManager } from '../services/eventManager';
 
 const router = Router();
 const prisma = new PrismaClient();
 
+const roomInclude = {
+  participants: true
+} satisfies Prisma.RoomInclude;
+
+const eventIncludeWithThemes = {
+  rooms: {
+    include: roomInclude
+  },
+  themes: {
+    include: {
+      theme: true
+    }
+  }
+} satisfies Prisma.EventInclude;
+
+const eventIncludeWithSubmissions = {
+  rooms: {
+    include: {
+      participants: true,
+      submissions: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true
+            }
+          },
+          votes: true
+        }
+      }
+    }
+  },
+  themes: {
+    include: {
+      theme: true
+    }
+  }
+} satisfies Prisma.EventInclude;
+
+type RoomWithParticipants = Prisma.RoomGetPayload<{ include: typeof roomInclude }>;
+type EventWithThemes = Prisma.EventGetPayload<{ include: typeof eventIncludeWithThemes }>;
+type EventWithSubmissions = Prisma.EventGetPayload<{ include: typeof eventIncludeWithSubmissions }>;
+type EventWithRoomsOnly = Prisma.EventGetPayload<{ include: { rooms: { include: typeof roomInclude } } }>;
+
 // Get current active event
 router.get('/current', async (req, res) => {
   try {
-    let event = await prisma.event.findFirst({
+    let event: EventWithThemes | null = await prisma.event.findFirst({
       where: {
         status: {
           in: ['submission', 'voting']
         }
       },
       include: {
-        rooms: {
-          include: {
-            participants: true
-          }
-        },
-        themes: {
-          include: {
-            theme: true
-          }
-        }
+        ...eventIncludeWithThemes
       },
       orderBy: [
         {
@@ -39,18 +74,7 @@ router.get('/current', async (req, res) => {
         where: {
           status: 'scheduled'
         },
-        include: {
-          rooms: {
-            include: {
-              participants: true
-            }
-          },
-          themes: {
-            include: {
-              theme: true
-            }
-          }
-        },
+        include: eventIncludeWithThemes,
         orderBy: [
           {
             scheduledStart: 'asc'
@@ -66,36 +90,48 @@ router.get('/current', async (req, res) => {
   }
 });
 
+// Get finished events history
+router.get('/history', async (_req, res) => {
+  try {
+    const events = await prisma.event.findMany({
+      where: {
+        status: 'finished'
+      },
+      include: {
+        themes: {
+          include: {
+            theme: true
+          }
+        },
+        rooms: {
+          select: {
+            id: true,
+            roomNumber: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          scheduledEnd: 'desc'
+        }
+      ]
+    });
+
+    res.json({ events });
+  } catch (error) {
+    console.error('Get event history error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Get event by ID
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const event = await prisma.event.findUnique({
+    const event: EventWithSubmissions | null = await prisma.event.findUnique({
       where: { id },
-      include: {
-        rooms: {
-          include: {
-            participants: true,
-            submissions: {
-              include: {
-                user: {
-                  select: {
-                    id: true,
-                    displayName: true
-                  }
-                },
-                votes: true
-              }
-            }
-          }
-        },
-        themes: {
-          include: {
-            theme: true
-          }
-        }
-      }
+      include: eventIncludeWithSubmissions
     });
 
     if (!event) {
@@ -115,7 +151,7 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
     const userId = req.userId!;
 
     // Find an active event
-    const event = await prisma.event.findFirst({
+    const event: EventWithRoomsOnly | null = await prisma.event.findFirst({
       where: {
         status: {
           in: ['submission', 'voting']
@@ -123,9 +159,7 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
       },
       include: {
         rooms: {
-          include: {
-            participants: true
-          }
+          include: roomInclude
         }
       },
       orderBy: [
@@ -140,7 +174,7 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
     }
 
     // Find a room with space (less than 80 participants)
-    let room = event.rooms.find(r => r.participants.length < 80);
+    let room = event.rooms.find((candidate: RoomWithParticipants) => candidate.participants.length < 80);
 
     if (!room) {
       // Create new room if all are full
@@ -150,9 +184,7 @@ router.post('/join', authMiddleware, async (req: AuthRequest, res) => {
           roomNumber: event.rooms.length + 1,
           status: 'active'
         },
-        include: {
-          participants: true
-        }
+        include: roomInclude
       });
     }
 

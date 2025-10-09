@@ -25,7 +25,7 @@ export interface Room {
   eventId: string;
   roomNumber: number;
   status: string;
-  participants: RoomParticipant[];
+  participants?: RoomParticipant[];
 }
 
 export interface RoomParticipant {
@@ -66,6 +66,12 @@ export interface Submission {
     displayName: string;
   };
   voteCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  room?: {
+    id: string;
+    roomNumber: number;
+  };
 }
 
 export interface Vote {
@@ -78,4 +84,39 @@ export interface Vote {
 export interface AuthResponse {
   token: string;
   user: User;
+}
+
+export interface EventHistoryItem {
+  id: string;
+  type: string;
+  status: string;
+  currentRound: number;
+  maxRounds: number;
+  scheduledStart: string;
+  scheduledEnd: string;
+  startTime?: string;
+  endTime?: string;
+  themes: EventTheme[];
+  rooms: Array<{
+    id: string;
+    roomNumber: number;
+  }>;
+}
+
+export interface SubmissionWithContext extends Submission {
+  createdAt: string;
+  updatedAt: string;
+  room: {
+    id: string;
+    roomNumber: number;
+    event: {
+      id: string;
+      type: string;
+      status: string;
+      currentRound: number;
+      maxRounds: number;
+      scheduledStart: string;
+      scheduledEnd: string;
+    };
+  };
 }

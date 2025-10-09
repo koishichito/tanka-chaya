@@ -1,9 +1,19 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
+type SubmissionWithVotes = Prisma.SubmissionGetPayload<{ include: { votes: true } }>;
+type SubmissionWithEvent = Prisma.SubmissionGetPayload<{
+  include: {
+    room: {
+      include: {
+        event: true;
+      };
+    };
+  };
+}>;
 
 // Submit tanka
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
@@ -83,15 +93,15 @@ router.get('/room/:roomId/round/:round', authMiddleware, async (req: AuthRequest
     });
 
     // Don't reveal authors during voting
-    const anonymousSubmissions = submissions.map(s => ({
-      id: s.id,
-      line1: s.line1,
-      line2: s.line2,
-      line3: s.line3,
-      line4: s.line4,
-      line5: s.line5,
-      points: s.points,
-      voteCount: s.votes.reduce((sum, v) => sum + v.voteCount, 0)
+    const anonymousSubmissions = submissions.map((submission: SubmissionWithVotes) => ({
+      id: submission.id,
+      line1: submission.line1,
+      line2: submission.line2,
+      line3: submission.line3,
+      line4: submission.line4,
+      line5: submission.line5,
+      points: submission.points,
+      voteCount: submission.votes.reduce((sum: number, vote) => sum + vote.voteCount, 0)
     }));
 
     res.json({ submissions: anonymousSubmissions });
@@ -102,6 +112,35 @@ router.get('/room/:roomId/round/:round', authMiddleware, async (req: AuthRequest
 });
 
 // Get user's own submission
+router.get('/mine', authMiddleware, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.userId!;
+
+    const submissions = await prisma.submission.findMany({
+      where: { userId },
+      include: {
+        room: {
+          include: {
+            event: true
+          }
+        }
+      },
+      orderBy: [
+        {
+          createdAt: 'desc'
+        }
+      ]
+    });
+
+    res.json({
+      submissions: submissions as SubmissionWithEvent[]
+    });
+  } catch (error) {
+    console.error('Get my submissions list error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 router.get('/mine/:roomId/:round', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const userId = req.userId!;

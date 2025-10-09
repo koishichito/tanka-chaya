@@ -1,22 +1,44 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
+type VoteInput = {
+  submissionId: string;
+  voteCount: number;
+};
+
+type SubmissionWithVotes = Prisma.SubmissionGetPayload<{ include: { votes: true } }>;
+
+const isVoteInputArray = (value: unknown): value is VoteInput[] => {
+  if (!Array.isArray(value)) {
+    return false;
+  }
+
+  return value.every(
+    (vote) =>
+      typeof vote === 'object' &&
+      vote !== null &&
+      typeof (vote as { submissionId?: unknown }).submissionId === 'string' &&
+      typeof (vote as { voteCount?: unknown }).voteCount === 'number'
+  );
+};
 
 // Submit votes
 router.post('/', authMiddleware, async (req: AuthRequest, res) => {
   try {
     const voterId = req.userId!;
-    const { votes } = req.body; // Array of { submissionId, voteCount }
+    const { votes: rawVotes } = req.body as { votes?: unknown }; // Array of { submissionId, voteCount }
 
-    if (!Array.isArray(votes) || votes.length === 0) {
+    if (!isVoteInputArray(rawVotes) || rawVotes.length === 0) {
       return res.status(400).json({ error: 'Invalid votes data' });
     }
 
+    const votes: VoteInput[] = rawVotes;
+
     // Validate: max 3 votes per submission
-    const invalidVotes = votes.filter(v => v.voteCount > 3);
+    const invalidVotes = votes.filter((vote) => vote.voteCount > 3);
     if (invalidVotes.length > 0) {
       return res.status(400).json({ error: 'Maximum 3 votes per submission' });
     }
@@ -53,12 +75,12 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
 
     // Create new votes
     const createdVotes = await Promise.all(
-      votes.map(v =>
+      votes.map((vote) =>
         prisma.vote.create({
           data: {
             voterId,
-            submissionId: v.submissionId,
-            voteCount: v.voteCount
+            submissionId: vote.submissionId,
+            voteCount: vote.voteCount
           }
         })
       )
@@ -72,7 +94,11 @@ router.post('/', authMiddleware, async (req: AuthRequest, res) => {
       });
 
       if (submission) {
-        const totalVotes = submission.votes.reduce((sum, v) => sum + v.voteCount, 0);
+        const submissionWithVotes = submission as SubmissionWithVotes;
+        const totalVotes = submissionWithVotes.votes.reduce(
+          (sum: number, storedVote) => sum + storedVote.voteCount,
+          0
+        );
         await prisma.submission.update({
           where: { id: vote.submissionId },
           data: { points: totalVotes }

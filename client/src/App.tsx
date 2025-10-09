@@ -5,8 +5,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Home from './pages/Home';
 import EventRoom from './pages/EventRoom';
+import EventHistory from './pages/EventHistory';
+import EventResults from './pages/EventResults';
+import MySubmissions from './pages/MySubmissions';
 import Admin from './pages/Admin';
+import AdminLogin from './pages/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
+import AppLayout from './components/AppLayout';
 
 function App() {
   const { user, initialized, checkAuth } = useAuth();
@@ -33,6 +38,10 @@ function App() {
           element={user ? <Navigate to="/" replace /> : <Login />}
         />
         <Route
+          path="/admin/login"
+          element={user && user.isAdmin ? <Navigate to="/admin" replace /> : <AdminLogin />}
+        />
+        <Route
           path="/register"
           element={user ? <Navigate to="/" replace /> : <Register />}
         />
@@ -40,7 +49,9 @@ function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <Home />
+              <AppLayout>
+                <Home />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -48,7 +59,39 @@ function App() {
           path="/event/:eventId"
           element={
             <ProtectedRoute>
-              <EventRoom />
+              <AppLayout>
+                <EventRoom />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/history"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EventHistory />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/events/:eventId/results"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <EventResults />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my/submissions"
+          element={
+            <ProtectedRoute>
+              <AppLayout>
+                <MySubmissions />
+              </AppLayout>
             </ProtectedRoute>
           }
         />
@@ -56,7 +99,9 @@ function App() {
           path="/admin"
           element={
             <ProtectedRoute requireAdmin>
-              <Admin />
+              <AppLayout>
+                <Admin />
+              </AppLayout>
             </ProtectedRoute>
           }
         />

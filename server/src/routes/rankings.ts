@@ -22,7 +22,13 @@ router.get('/event/:eventId', async (req, res) => {
             displayName: true
           }
         },
-        votes: true
+        votes: true,
+        room: {
+          select: {
+            id: true,
+            roomNumber: true
+          }
+        }
       },
       orderBy: {
         points: 'desc'

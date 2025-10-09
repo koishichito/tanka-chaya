@@ -11,8 +11,8 @@ export default function Login() {
     e.preventDefault();
     try {
       await login(email, password);
-    } catch (err) {
-      // Error is handled by the store
+    } catch {
+      // エラー表示はストア側で処理済み
     }
   };
 
@@ -67,8 +67,16 @@ export default function Login() {
         <p className="mt-4 text-center text-sm text-gray-600">
           アカウントをお持ちでない方は{' '}
           <Link to="/register" className="text-purple-600 hover:underline">
-            こちら
+            新規登録ページ
           </Link>
+          へどうぞ。
+        </p>
+        <p className="mt-2 text-center text-sm text-gray-500">
+          管理者の方は{' '}
+          <Link to="/admin/login" className="text-purple-500 hover:underline">
+            管理者ログインページ
+          </Link>
+          からサインインしてください。
         </p>
       </div>
     </div>

@@ -46,6 +46,14 @@ export const api = {
     return res.json();
   },
 
+  async getEventHistory() {
+    const res = await fetch(`${API_URL}/events/history`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   async getEvent(id: string) {
     const res = await fetch(`${API_URL}/events/${id}`);
     if (!res.ok) throw new Error(await res.text());
@@ -96,6 +104,14 @@ export const api = {
 
   async getMySubmission(roomId: string, round: number) {
     const res = await fetch(`${API_URL}/submissions/mine/${roomId}/${round}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  async getMySubmissionsList() {
+    const res = await fetch(`${API_URL}/submissions/mine`, {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());

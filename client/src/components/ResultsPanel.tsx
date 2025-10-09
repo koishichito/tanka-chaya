@@ -15,6 +15,11 @@ interface RankedSubmission {
   line4: string;
   line5: string;
   points: number;
+  round: number;
+  room?: {
+    id: string;
+    roomNumber: number;
+  };
   user: {
     id: string;
     displayName: string;
@@ -33,9 +38,9 @@ export default function ResultsPanel({ eventId, roomId, round }: Props) {
     try {
       const data = await api.getEventRankings(eventId);
       // Filter by current round and room, then sort by points
-      const filtered = data.rankings
-        .filter((r: any) => r.room.id === roomId && r.round === round)
-        .sort((a: any, b: any) => b.points - a.points);
+      const filtered = (data.rankings as RankedSubmission[])
+        .filter((submission) => submission.room?.id === roomId && submission.round === round)
+        .sort((a, b) => b.points - a.points);
       setRankings(filtered);
     } catch (error) {
       console.error('Failed to load results:', error);
